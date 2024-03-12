@@ -1,5 +1,6 @@
 from typing import Any, Text, Dict, List
 import requests
+import logging
 import json
 import os
 from datetime import datetime
@@ -51,11 +52,11 @@ class ActionEvaluateBirthday(Action):
             return "I could not interact with Qanary triplestore at " + self.sparql_url + " due to the error " + type(e).__name__
 
     def get_result_from_binding(self, binding):
-        result_text = binding["json"]["value"].replace("\\", "")
-        result_json = json.loads(result_text)
-        result = result_json["results"]["bindings"]
-        return result
-
+      #  result_text = binding["json"]["value"].replace("\\", "")
+      #  result_json = json.loads(result_text)
+      #  result = result_json["results"]["bindings"]
+      #  return result
+        return binding
     def get_recognition_table_row(self):
         return """
                 <tr>
@@ -208,7 +209,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, BirthDataQueryBuilderWikidata, WikidataQueryExecuter"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
