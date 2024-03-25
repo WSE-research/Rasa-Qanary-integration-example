@@ -208,7 +208,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]

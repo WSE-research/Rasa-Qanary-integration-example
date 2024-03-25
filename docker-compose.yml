@@ -22,6 +22,29 @@ services:
     environment:
       - DBA_PASSWORD=$DBA_PASSWORD
 
+  ned-component:
+    image: qanary/qanary-component-ned-dbpediaspotlight
+    ports:
+      - "$NED_DBPEDIA_SPOTLIGHT_PORT:10008"
+    #network_mode: host
+    restart: unless-stopped
+    environment:
+      - SERVER_HOST=$QANARY_COMPONENT_SERVER_HOST
+      - SERVER_PORT=$NED_DBPEDIA_SPOTLIGHT_PORT
+      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$NED_DBPEDIA_SPOTLIGHT_PORT
+
+  kg2kg-component:
+    image: qanary/qanary-component-kg2kg-translateannotationsofinstance
+    ports:
+      - "$KG2KG_COMPONENT_PORT:40444"
+    environment:
+      - QANARY_COMPONENT_SERVER_HOST=http://${HOST_IP}
+      - QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL=http://${HOST_IP}:8080
+      - SERVER_PORT=$KG2KG_COMPONENT_PORT
+      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$KG2KG_COMPONENT_PORT
+
 #  mlflow:
 #    image: qanary/qanary-component-logging-mlflow:latest
 #    #network_mode: host
@@ -73,12 +96,12 @@ services:
     restart: unless-stopped
     environment:
       - HOST_IP=$HOST_IP
-      - SERVER_HOST=$BIRTH_DATA_WIKIDATA_SERVER_HOST
+      - SERVER_HOST=$QANARY_COMPONENT_SERVER_HOST
       - SERVER_PORT=$BIRTH_DATA_WIKIDATA_PORT
       - SPRING_APPLICATION_NAME=$BIRTH_DATA_WIKIDATA_COMPONENT_NAME
       - SPRING_APPLICATION_DESCRIPTION=$BIRTH_DATA_WIKIDATA_COMPONENT_DESCRIPTION
-      - SPRING_BOOT_ADMIN_URL=$BIRTH_DATA_WIKIDATA_SPRING_BOOT_ADMIN_URL
-      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$BIRTH_DATA_WIKIDATA_SERVER_HOST:$BIRTH_DATA_WIKIDATA_PORT
+      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$QANARY_COMPONENT_SERVER_HOST:$BIRTH_DATA_WIKIDATA_PORT
 
   sparql-executer:
     image: qanary/qanary-component-qe-sparqlexecuter:latest
@@ -111,36 +134,36 @@ services:
       - INITIAL_QUESTION_PARAMETER_NAME="$CHATBOT_UI_INITIAL_QUESTION_PARAMETER_NAME"
       - DEFAULT_BACKEND_TYPE="$CHATBOT_UI_DEFAULT_BACKEND_TYPE"
 
-#  rasa_server:
-#    container_name: "rasa_server"
-#    restart: unless-stopped
-#    user: root
-#    build:
-#      context: Chatbot
-#      dockerfile: Dockerfile
-#    volumes:
-#      - "./Chatbot:/app"
-#    #network_mode: host
-#    ports:
-#      - "5005:5005"
-#    environment:
-#      - HOST_IP=$HOST_IP
-#      - RASA_ACTION_ENDPOINT_HOST=$HOST_IP
-#  action_server:
-#    container_name: "action_server"
-#    restart: unless-stopped
-#    build:
-#      context: Chatbot
-#      dockerfile: ./actions/Dockerfile
-#    volumes:
-#      - "./Chatbot/actions:/app/actions"
-#      - "./Chatbot/data:/app/data"
-#    #network_mode: host
-#    ports:
-#      - "5055:5055"
-#    environment:
-#      - QANARY_IP=$HOST_IP
-#      - SPARQL_IP=$HOST_IP
+  rasa_server:
+    container_name: "rasa_server"
+    restart: unless-stopped
+    user: root
+    build:
+      context: Chatbot
+      dockerfile: Dockerfile
+    volumes:
+      - "./Chatbot:/app"
+    #network_mode: host
+    ports:
+      - "5005:5005"
+    environment:
+      - HOST_IP=$HOST_IP
+      - RASA_ACTION_ENDPOINT_HOST=$HOST_IP
+  action_server:
+    container_name: "action_server"
+    restart: unless-stopped
+    build:
+      context: Chatbot
+      dockerfile: ./actions/Dockerfile
+    volumes:
+      - "./Chatbot/actions:/app/actions"
+      - "./Chatbot/data:/app/data"
+    #network_mode: host
+    ports:
+      - "5055:5055"
+    environment:
+      - QANARY_IP=$HOST_IP
+      - SPARQL_IP=$HOST_IP
 
 volumes:
   artifacts: {}
