@@ -108,8 +108,8 @@ class ActionEvaluateBirthday(Action):
             PREFIX  dbr:  <http://dbpedia.org/resource/>
             PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             SELECT ?resource ?start ?end
-            WHERE  { 
-                GRAPH <""" + graph_id + """> { 
+            FROM <""" + graph_id + """>
+            WHERE  {
                     ?annotation oa:hasBody ?resource ;
                                 qa:score ?annotationScore ;
                                 oa:hasTarget ?target .
@@ -118,7 +118,6 @@ class ActionEvaluateBirthday(Action):
                     ?textSelector   rdf:type oa:TextPositionSelector ;
                                     oa:start ?start ;
                                     oa:end ?end .
-                }
             }
             ORDER BY ?start 
             """
