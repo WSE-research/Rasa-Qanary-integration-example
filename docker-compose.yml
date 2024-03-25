@@ -7,12 +7,20 @@ services:
       - "8080:8080"
     environment:
       - HOST_IP=$HOST_IP
-      - STARDOG_URL=http://admin:admin@demos.swe.htwk-leipzig.de:40100/
-      - STARDOG_USERNAME=admin
-      - STARDOG_PASSWORD=admin
+      - VIRTUOSO_URL=jdbc:virtuoso://${HOST_IP}:1111
+      - VIRTUOSO_USERNAME=dba
+      - VIRTUOSO_PASSWORD=$DBA_PASSWORD
       - SERVER_HOST=http://$HOST_IP
       - SERVER_PORT=8080
       - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
+
+  virtuoso_triplestore:
+    image: wseresearch/virtuoso-instance:latest
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    environment:
+      - DBA_PASSWORD=$DBA_PASSWORD
 
   mlflow:
     image: qanary/qanary-component-logging-mlflow:latest
