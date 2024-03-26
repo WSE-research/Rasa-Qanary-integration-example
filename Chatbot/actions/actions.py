@@ -18,6 +18,14 @@ class ActionValues():
             'text': tracker.latest_message['text']
         }
 
+# This action is called when the corresponding intent for birthday evaluation is triggered
+# To evaluate the birthday, the Qanary pipeline with the defined components is executed
+# After that process is accomplished, a SPARQL query requests the stored json (inserted by the SparqlExecuterComponent)
+# Finally, this JSON is parsed and the values are used to return an answer
+
+# Simplified, an action like this follows these steps:
+# -> Qanary pipeline execution (define the used components!)
+# -> Use the relevant data, which you can request with a separate SPARQL query
 
 class ActionEvaluateBirthday(Action):
 
@@ -108,8 +116,8 @@ class ActionEvaluateBirthday(Action):
             PREFIX  dbr:  <http://dbpedia.org/resource/>
             PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             SELECT ?resource ?start ?end
-            WHERE  { 
-                GRAPH <""" + graph_id + """> { 
+            FROM <""" + graph_id + """>
+            WHERE  {
                     ?annotation oa:hasBody ?resource ;
                                 qa:score ?annotationScore ;
                                 oa:hasTarget ?target .
@@ -118,7 +126,6 @@ class ActionEvaluateBirthday(Action):
                     ?textSelector   rdf:type oa:TextPositionSelector ;
                                     oa:start ?start ;
                                     oa:end ?end .
-                }
             }
             ORDER BY ?start 
             """
@@ -149,7 +156,8 @@ class ActionEvaluateBirthday(Action):
             table = """
                 <table>
                     <tr>
-                        <th>Person</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
                         <th>Birthplace</th>
                         <th>Birthdate</th>
                     </tr>
@@ -168,9 +176,11 @@ class ActionEvaluateBirthday(Action):
                             <td>{}</td>
                             <td>{}</td>
                             <td>{}</td>
+                            <td>{}</td>
                         </tr>
                         """.format(
-                        self.build_result_text_from_val(val, 'person'),
+                        self.build_result_text_from_val(val, 'firstnameLabel'),
+                        self.build_result_text_from_val(val, 'lastnameLabel'),
                         self.build_result_text_from_val(val, 'birthplace'),
                         self.build_result_text_from_val(val, 'birthdate')
                     )
@@ -208,7 +218,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
