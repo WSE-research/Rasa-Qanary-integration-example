@@ -18,6 +18,14 @@ class ActionValues():
             'text': tracker.latest_message['text']
         }
 
+# This action is called when the corresponding intent for birthday evaluation is triggered
+# To evaluate the birthday, the Qanary pipeline with the defined components is executed
+# After that process is accomplished, a SPARQL query requests the stored json (inserted by the SparqlExecuterComponent)
+# Finally, this JSON is parsed and the values are used to return an answer
+
+# Simplified, an action like this follows these steps:
+# -> Qanary pipeline execution (define the used components!)
+# -> Use the relevant data, which you can request with a separate SPARQL query
 
 class ActionEvaluateBirthday(Action):
 
@@ -148,7 +156,8 @@ class ActionEvaluateBirthday(Action):
             table = """
                 <table>
                     <tr>
-                        <th>Person</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
                         <th>Birthplace</th>
                         <th>Birthdate</th>
                     </tr>
@@ -167,9 +176,11 @@ class ActionEvaluateBirthday(Action):
                             <td>{}</td>
                             <td>{}</td>
                             <td>{}</td>
+                            <td>{}</td>
                         </tr>
                         """.format(
-                        self.build_result_text_from_val(val, 'person'),
+                        self.build_result_text_from_val(val, 'firstnameLabel'),
+                        self.build_result_text_from_val(val, 'lastnameLabel'),
                         self.build_result_text_from_val(val, 'birthplace'),
                         self.build_result_text_from_val(val, 'birthdate')
                     )
