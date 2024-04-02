@@ -33,7 +33,7 @@ For example:
 
 The system is configured to answer the question using the following steps:
 
-. Identify the firstname and lastname of the person using a NER component
+. Identify the firstname and lastname of the person using a NER, or NED, component
 . Create a SPARQL query to query Wikidata for the birth date of the person
 . Query Wikidata for the birth date of the person
 . Prepare a HTML answer to the question to be displayed in the chatbot UI
@@ -155,6 +155,10 @@ If you want to use a new (recently published) version of a component, you might 
 ----
 docker-compose pull 
 ----
+
+
+### Troubleshooting: Pipeline crashes due to Virtuoso errors
+When first executing `docker-compose up` the Qanary pipeline may try to access the virtuoso instance before it is started. In this case, it helps to restart the pipeline. 
 
 ## Components of the architecture
 
