@@ -9,6 +9,9 @@ from SPARQLWrapper import SPARQLWrapper, JSON, POST
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ActionValues():
 
@@ -80,6 +83,7 @@ class ActionEvaluateBirthday(Action):
         if len(bindings) == 0:
             return self.warning_no_birthdate_found
         else:
+          #  filtered_bindings = [binding for binding in bindings if binding["resource"]["value"] in ["FIRST_NAME", "MIDDLE_NAME", "LAST_NAME"]]
             prefix = "I have recognized the following entities (only First and Last Name are used for the birthdate):"
             table = """
                 <table>
@@ -92,11 +96,12 @@ class ActionEvaluateBirthday(Action):
             row = self.get_recognition_table_row()
             if len(bindings) != 0:
                 for binding in bindings:
+                    logger.info(binding)
                     resource = binding["resource"]["value"]
                     start = binding["start"]["value"]
                     end = binding["end"]["value"]
-
                     if resource in row:
+                        logger.info("Resource in Row")
                         row = row.replace(resource, input[int(start):int(end)])
                     else:
                         row = self.finish_recognition_row(row)
@@ -126,6 +131,7 @@ class ActionEvaluateBirthday(Action):
                     ?textSelector   rdf:type oa:TextPositionSelector ;
                                     oa:start ?start ;
                                     oa:end ?end .
+                    FILTER(str(?resource) IN ("FIRST_NAME", "MIDDLE_NAME", "LAST_NAME"))
             }
             ORDER BY ?start 
             """
@@ -218,7 +224,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
