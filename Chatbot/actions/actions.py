@@ -83,7 +83,6 @@ class ActionEvaluateBirthday(Action):
         if len(bindings) == 0:
             return self.warning_no_birthdate_found
         else:
-          #  filtered_bindings = [binding for binding in bindings if binding["resource"]["value"] in ["FIRST_NAME", "MIDDLE_NAME", "LAST_NAME"]]
             prefix = "I have recognized the following entities (only First and Last Name are used for the birthdate):"
             table = """
                 <table>
