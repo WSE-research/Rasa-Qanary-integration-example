@@ -9,7 +9,7 @@ services:
       - HOST_IP=$HOST_IP
       - VIRTUOSO_URL=jdbc:virtuoso://${HOST_IP}:$VIRTUOSO_JDBC_PORT
       - VIRTUOSO_USERNAME=dba
-      - VIRTUOSO_PASSWORD=$DBA_PASSWORD
+      - VIRTUOSO_PASSWORD=$VIRTUOSO_PASSWORD
       - SERVER_HOST=http://$HOST_IP
       - SERVER_PORT=8080
       - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
@@ -20,7 +20,7 @@ services:
       - "$VIRTUOSO_WEB_PORT:8890"
       - "$VIRTUOSO_JDBC_PORT:1111"
     environment:
-      - DBA_PASSWORD=$DBA_PASSWORD
+      - DBA_PASSWORD=$VIRTUOSO_PASSWORD
 
   ned-component:
     image: qanary/qanary-component-ned-dbpediaspotlight
@@ -35,7 +35,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$NED_DBPEDIA_SPOTLIGHT_PORT
 
   kg2kg-component:
-    image: qanary/qanary-component-kg2kg-translateannotationsofinstance
+    image: qanary/qanary-component-kg2kg-translateannotationsofinstance:latest
     ports:
       - "$KG2KG_COMPONENT_PORT:40444"
     environment:
@@ -66,7 +66,7 @@ services:
     image: qanary/qanary-component-ner-automl-pretrained-name:0.1.0
     #network_mode: host
     ports:
-      - 8081:8081
+      - "$AUTOMATION_SERVICE_COMPONENT_PORT:8081"
     environment:
       - HOST_IP=$HOST_IP
       - SPRING_BOOT_ADMIN_URL=http://${HOST_IP}:8080
@@ -82,7 +82,7 @@ services:
   birth-data:
     image: qanary/qanary-component-qb-birthdata-wikidata:latest
     ports:
-      - $BIRTH_DATA_WIKIDATA_PORT:$BIRTH_DATA_WIKIDATA_PORT
+      - $BIRTH_DATA_WIKIDATA_PORT:5555
     #network_mode: host
     restart: unless-stopped
     environment:
@@ -99,7 +99,7 @@ services:
     container_name: $SPARQL_EXECUTER_COMPONENT_NAME
     #network_mode: host
     ports:
-      - $SPARQL_EXECUTER_PORT:$SPARQL_EXECUTER_PORT
+      - "$SPARQL_EXECUTER_PORT:10010"
     restart: unless-stopped
     environment:
       - HOST_IP=$HOST_IP
