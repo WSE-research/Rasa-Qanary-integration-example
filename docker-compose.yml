@@ -1,10 +1,10 @@
 version: '3.5'
 services:
   qanary-pipeline:
-    image: qanary/qanary-pipeline:latest
+    image: qanary/qanary-pipeline:3.9.2
     #network_mode: host
     ports:
-      - "8080:8080"
+      - "$QANARY_PIPELINE_PORT:$QANARY_PIPELINE_PORT"
     environment:
       - HOST_IP=$HOST_IP
       - VIRTUOSO_URL=jdbc:virtuoso://${HOST_IP}:$VIRTUOSO_JDBC_PORT
@@ -15,34 +15,26 @@ services:
       - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
 
   virtuoso_triplestore:
-    image: wseresearch/virtuoso-instance:latest
+    image: openlink/virtuoso-opensource-7
     ports:
-      - "$VIRTUOSO_WEB_PORT:8890"
-      - "$VIRTUOSO_JDBC_PORT:1111"
+      - "$VIRTUOSO_WEB_PORT:$VIRTUOSO_WEB_PORT"
+      - "$VIRTUOSO_JDBC_PORT:$VIRTUOSO_JDBC_PORT"
     environment:
       - DBA_PASSWORD=$VIRTUOSO_PASSWORD
 
-  ned-component:
-    image: qanary/qanary-component-ned-dbpediaspotlight
-    ports:
-      - "$NED_DBPEDIA_SPOTLIGHT_PORT:10008"
+  sparql-executer:
+    image: qanary/qanary-component-qe-sparqlexecuter:3.3.0
+    container_name: sparql-executer
     #network_mode: host
+    ports:
+      - "$SPARQL_EXECUTER_PORT:$SPARQL_EXECUTER_PORT"
     restart: unless-stopped
     environment:
-      - SERVER_HOST=$QANARY_COMPONENT_SERVER_HOST
-      - SERVER_PORT=$NED_DBPEDIA_SPOTLIGHT_PORT
-      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
-      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$NED_DBPEDIA_SPOTLIGHT_PORT
-
-  kg2kg-component:
-    image: qanary/qanary-component-kg2kg-translateannotationsofinstance:latest
-    ports:
-      - "$KG2KG_COMPONENT_PORT:40444"
-    environment:
       - SERVER_HOST=http://${HOST_IP}
-      - SPRING_BOOT_ADMIN_URL=http://${HOST_IP}:8080
-      - SERVER_PORT=$KG2KG_COMPONENT_PORT
-      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$KG2KG_COMPONENT_PORT
+      - SERVER_PORT=$SPARQL_EXECUTER_PORT
+      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL=$QANARY_COMPONENT_SERVER_HOST:$SPARQL_EXECUTER_PORT
+      - SPRING_BOOT_ADMIN_CLIENT_SERVICE-BASE-URL=$QANARY_COMPONENT_SERVER_HOST:$SPARQL_EXECUTER_PORT
 
   mlflow:
     image: qanary/qanary-component-logging-mlflow:latest
@@ -66,49 +58,31 @@ services:
     image: qanary/qanary-component-ner-automl-pretrained-name:0.1.0
     #network_mode: host
     ports:
-      - "$AUTOMATION_SERVICE_COMPONENT_PORT:8081"
+      - "$AUTOMATION_SERVICE_COMPONENT_PORT:$AUTOMATION_SERVICE_COMPONENT_PORT"
     environment:
       - HOST_IP=$HOST_IP
-      - SPRING_BOOT_ADMIN_URL=http://${HOST_IP}:8080
+      - SERVICE_NAME_COMPONENT=$SERVICE_NAME_COMPONENT_AUTOMATION_SERVICE_COMPONENT
+      - SERVICE_DESCRIPTION_COMPONENT=abc # todo
+      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
       - SPRING_BOOT_ADMIN_USERNAME=admin
       - SPRING_BOOT_ADMIN_PASSWORD=admin
-      - SERVICE_HOST=http://${HOST_IP}:8081
-      - SERVICE_PORT=8081
-      - SERVICE_NAME_COMPONENT=AutomationServiceComponent
-      - SERVICE_DESCRIPTION_COMPONENT="A component interacting with an NER model"
+      - SERVICE_HOST=http://${HOST_IP}:$AUTOMATION_SERVICE_COMPONENT_PORT
+      - SERVICE_PORT=$AUTOMATION_SERVICE_COMPONENT_PORT
       - PRODUCTION=True
     command: uvicorn qanarycomponent:app --host 0.0.0.0 --port=8081
 
   birth-data:
-    image: qanary/qanary-component-qb-birthdata-wikidata:latest
+    image: qanary/qanary-component-qb-birthdata-wikidata:3.4.3
     ports:
-      - $BIRTH_DATA_WIKIDATA_PORT:5555
+      - "$BIRTH_DATA_WIKIDATA_PORT:$BIRTH_DATA_WIKIDATA_PORT"
     #network_mode: host
     restart: unless-stopped
     environment:
       - HOST_IP=$HOST_IP
       - SERVER_HOST=$QANARY_COMPONENT_SERVER_HOST
       - SERVER_PORT=$BIRTH_DATA_WIKIDATA_PORT
-      - SPRING_APPLICATION_NAME=$BIRTH_DATA_WIKIDATA_COMPONENT_NAME
-      - SPRING_APPLICATION_DESCRIPTION=$BIRTH_DATA_WIKIDATA_COMPONENT_DESCRIPTION
       - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
       - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$QANARY_COMPONENT_SERVER_HOST:$BIRTH_DATA_WIKIDATA_PORT
-
-  sparql-executer:
-    image: qanary/qanary-component-qe-sparqlexecuter:latest
-    container_name: $SPARQL_EXECUTER_COMPONENT_NAME
-    #network_mode: host
-    ports:
-      - "$SPARQL_EXECUTER_PORT:10010"
-    restart: unless-stopped
-    environment:
-      - HOST_IP=$HOST_IP
-      - SERVER_HOST=$QANARY_COMPONENT_SERVER_HOST
-      - SERVER_PORT=$SPARQL_EXECUTER_PORT
-      - SPRING_APPLICATION_NAME=$SPARQL_EXECUTER_COMPONENT_NAME
-      - SPRING_APPLICATION_DESCRIPTION=$SPARQL_EXECUTER_COMPONENT_DESCRIPTION
-      - SPRING_BOOT_ADMIN_URL=$QANARY_COMPONENT_SPRING_BOOT_ADMIN_URL
-      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$QANARY_COMPONENT_SERVER_HOST:$SPARQL_EXECUTER_PORT
       
   chatbot-ui:
     image: qanary/qanary-ui:latest

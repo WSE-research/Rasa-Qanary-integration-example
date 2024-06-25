@@ -62,7 +62,7 @@ class ActionEvaluateBirthday(Action):
             return "I could not interact with Qanary triplestore at " + self.sparql_url + " due to the error " + type(e).__name__
 
     def get_result_from_binding(self, binding):
-        result_text = binding["json"]["value"].replace("\\", "")
+        result_text = binding['json']['value'].replace("\\n", "").replace("\\", "")
         result_json = json.loads(result_text)
         result = result_json["results"]["bindings"]
         return result
@@ -130,7 +130,6 @@ class ActionEvaluateBirthday(Action):
                     ?textSelector   rdf:type oa:TextPositionSelector ;
                                     oa:start ?start ;
                                     oa:end ?end .
-                    FILTER(str(?resource) IN ("FIRST_NAME", "MIDDLE_NAME", "LAST_NAME"))
             }
             ORDER BY ?start 
             """
@@ -156,13 +155,13 @@ class ActionEvaluateBirthday(Action):
 
     def build_result_table(self, bindings):
         if len(bindings) == 0:
+            logger.warning("Length of bindings is 0")
             return self.warning_no_birthdate_found
         else:
             table = """
                 <table>
                     <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
+                        <th>Person</th>
                         <th>Birthplace</th>
                         <th>Birthdate</th>
                     </tr>
@@ -181,11 +180,9 @@ class ActionEvaluateBirthday(Action):
                             <td>{}</td>
                             <td>{}</td>
                             <td>{}</td>
-                            <td>{}</td>
                         </tr>
                         """.format(
-                        self.build_result_text_from_val(val, 'firstnameLabel'),
-                        self.build_result_text_from_val(val, 'lastnameLabel'),
+                        self.build_result_text_from_val(val, 'person'),
                         self.build_result_text_from_val(val, 'birthplace'),
                         self.build_result_text_from_val(val, 'birthdate')
                     )
@@ -223,7 +220,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=NED-DBpediaSpotlight, KG2KG-TranslateAnnotationsOfInstanceToDBpediaOrWikidata, AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=AutomationServiceComponent, QB-BirthDataWikidata, QE-SparqlQueryExecutedAutomaticallyOnWikidataOrDBpedia"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
