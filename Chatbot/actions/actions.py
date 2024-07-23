@@ -9,6 +9,9 @@ from SPARQLWrapper import SPARQLWrapper, JSON, POST
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ActionValues():
 
@@ -18,6 +21,14 @@ class ActionValues():
             'text': tracker.latest_message['text']
         }
 
+# This action is called when the corresponding intent for birthday evaluation is triggered
+# To evaluate the birthday, the Qanary pipeline with the defined components is executed
+# After that process is accomplished, a SPARQL query requests the stored json (inserted by the SparqlExecuterComponent)
+# Finally, this JSON is parsed and the values are used to return an answer
+
+# Simplified, an action like this follows these steps:
+# -> Qanary pipeline execution (define the used components!)
+# -> Use the relevant data, which you can request with a separate SPARQL query
 
 class ActionEvaluateBirthday(Action):
 
@@ -51,7 +62,7 @@ class ActionEvaluateBirthday(Action):
             return "I could not interact with Qanary triplestore at " + self.sparql_url + " due to the error " + type(e).__name__
 
     def get_result_from_binding(self, binding):
-        result_text = binding["json"]["value"].replace("\\", "")
+        result_text = binding['json']['value'].replace("\\n", "").replace("\\", "")
         result_json = json.loads(result_text)
         result = result_json["results"]["bindings"]
         return result
@@ -84,11 +95,12 @@ class ActionEvaluateBirthday(Action):
             row = self.get_recognition_table_row()
             if len(bindings) != 0:
                 for binding in bindings:
+                    logger.info(binding)
                     resource = binding["resource"]["value"]
                     start = binding["start"]["value"]
                     end = binding["end"]["value"]
-
                     if resource in row:
+                        logger.info("Resource in Row")
                         row = row.replace(resource, input[int(start):int(end)])
                     else:
                         row = self.finish_recognition_row(row)
@@ -108,8 +120,8 @@ class ActionEvaluateBirthday(Action):
             PREFIX  dbr:  <http://dbpedia.org/resource/>
             PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             SELECT ?resource ?start ?end
-            WHERE  { 
-                GRAPH <""" + graph_id + """> { 
+            FROM <""" + graph_id + """>
+            WHERE  {
                     ?annotation oa:hasBody ?resource ;
                                 qa:score ?annotationScore ;
                                 oa:hasTarget ?target .
@@ -118,7 +130,6 @@ class ActionEvaluateBirthday(Action):
                     ?textSelector   rdf:type oa:TextPositionSelector ;
                                     oa:start ?start ;
                                     oa:end ?end .
-                }
             }
             ORDER BY ?start 
             """
@@ -144,6 +155,7 @@ class ActionEvaluateBirthday(Action):
 
     def build_result_table(self, bindings):
         if len(bindings) == 0:
+            logger.warning("Length of bindings is 0")
             return self.warning_no_birthdate_found
         else:
             table = """
@@ -208,7 +220,7 @@ class ActionEvaluateBirthday(Action):
     def run_pipeline_query(self, text):
         try:
             pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
-                "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
+                "&language=en&componentlist%5B%5D=AutomationServiceComponent, QB-BirthDataWikidata, QE-SparqlQueryExecutedAutomaticallyOnWikidataOrDBpedia"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
